@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-deployment
+  labels:
+    app: spring
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spring
+  template:
+    metadata:
+      labels:
+        app: spring
+    spec:
+      containers:
+      - name: spring-deployment
+        image: spring-deployment:COMMIT_SHA
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8090
+        env:
+         - name: MANAGEMENT_ENDPOINT_READINESS_ENABLED
+           value: "true"
+         - name: MANAGEMENT_ENDPOINT_LIVENESS_ENABLED
+           value: "true"      
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8090
+          initialDelaySeconds: 50
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
