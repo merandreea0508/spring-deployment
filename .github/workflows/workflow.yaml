@@ -1,0 +1,41 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches:
+      - main # You can change this to the branch you want to trigger the workflow on
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  call-workflow-passing-data:
+    needs: build
+    uses: scalestack-technologies/test-repo/.github/workflows/maven.yaml@main 
+    secrets: inherit
+    
+  build:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build with Maven
+      run: mvn clean install
+
+    - name: Build Docker Image
+      run: |
+        eval $(minikube -p minikube docker-env)
+        COMMIT_SHA=$(git rev-parse --short ${{ github.sha }})
+        echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
+        docker build -t spring-deployment:$COMMIT_SHA .
+
+    - name: Deploy to Minikube
+      run: |
+        sed -i "s/\COMMIT_SHA/${COMMIT_SHA}/g" config/spring-deployment.yaml
+        kubectl apply -f config/spring-deployment.yaml && kubectl rollout status deployment/spring-deployment --timeout=300s
+
+    - name: Get deployment status
+      run: kubectl get deployment spring-deployment -ojson | jq ".status.availableReplicas"
