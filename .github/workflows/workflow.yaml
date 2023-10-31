@@ -10,10 +10,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  call-workflow-passing-data:
-    needs: build
-    uses: scalestack-technologies/test-repo/.github/workflows/maven.yaml@main 
-    secrets: inherit
     
   build:
     runs-on: [self-hosted, linux, x64]
